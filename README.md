@@ -28,8 +28,7 @@ Source of the dataset: https://www.aicrowd.com/challenges/spotify-million-playli
 ⋮
 ├── src/
 ⋮
-├── models/                    # Saved model checkpoints
-└── figures/                   # Plots and visualizations for the report
+└── models/                    # Saved model checkpoints
 ```
 
 ## Quickstart
