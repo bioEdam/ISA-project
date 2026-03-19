@@ -1,6 +1,4 @@
 """
-json_to_parquet.py
-------------------
 Converts MPD JSON slices into a single parquet file containing all raw playlist
 and track data. Processes slices in batches to keep memory usage manageable.
 
@@ -9,10 +7,6 @@ Environment variables:
     MPD_OUT         Output parquet file path (default: processed/mpd_raw.parquet)
     MPD_SLICES      Number of slices to process (default: 500, max: 1000)
     MPD_BATCH       Number of slices per batch (default: 50)
-
-Usage:
-    MPD_PATH=data/mpd/data python json_to_parquet.py
-    MPD_PATH=data/mpd/data MPD_OUT=processed/mpd_raw.parquet MPD_SLICES=500 MPD_BATCH=50 python json_to_parquet.py
 """
 
 from dotenv import load_dotenv
