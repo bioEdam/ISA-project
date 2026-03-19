@@ -3,3 +3,6 @@ data
 .idea
 .env
 .claude
+processed/
+src/outputs/
+notebooks/outputs
