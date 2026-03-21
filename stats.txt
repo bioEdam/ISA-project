@@ -1,11 +1,11 @@
-number of playlists 1000000
-number of tracks 66346428
-number of unique tracks 2262292
-number of unique albums 734684
-number of unique artists 295860
-number of unique titles 92944
-number of playlists with descriptions 18760
-number of unique normalized titles 17381
+number of playlists 1,000,000
+number of tracks 66,346,428
+number of unique tracks 2,262,292
+number of unique albums 734,684
+number of unique artists 295,860
+number of unique titles 92,944
+number of playlists with descriptions 18,760
+number of unique normalized titles 17,381
 avg playlist length 66.346428
 
 top playlist titles
