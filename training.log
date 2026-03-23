@@ -32,8 +32,6 @@ Training GRU Recommender
   Ep 15/15 | Train 5.3612 / 0.2493 | Val 5.3436 / 0.2543 | 220s *
 Training Transformer Recommender
 ======================================================================
-/home/candrak/isa-project/.venv/lib/python3.10/site-packages/torch/nn/modules/transformer.py:431: UserWarning: Support for mismatched src_key_padding_mask and mask is deprecated. Use same type for both instead.
-  src_key_padding_mask = F._canonical_mask(
   Ep  1/15 | Train 6.4804 / 0.2289 | Val 5.7483 / 0.2427 | 161s *
   Ep  2/15 | Train 5.7423 / 0.2414 | Val 5.5835 / 0.2437 | 161s *
   Ep  3/15 | Train 5.6068 / 0.2432 | Val 5.5205 / 0.2440 | 161s *

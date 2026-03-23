@@ -58,6 +58,6 @@ class TransformerRecommender(nn.Module):
         B, L = x.shape
         pos = torch.arange(L, device=x.device).unsqueeze(0)
         emb = self.dropout(self.embedding(x) + self.pos_embedding(pos))
-        causal = torch.triu(torch.full((L, L), float('-inf'), device=x.device), diagonal=1)
+        causal = torch.triu(torch.ones(L, L, dtype=torch.bool, device=x.device), diagonal=1)
         out = self.encoder(emb, mask=causal, src_key_padding_mask=pad_mask)
         return self.fc(out)
