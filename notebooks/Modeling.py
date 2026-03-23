@@ -22,6 +22,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
+from datetime import datetime
 
 import torch
 import torch.nn as nn
@@ -39,14 +40,34 @@ if torch.cuda.is_available():
     torch.cuda.manual_seed(42)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-print(f'Device: {device}')
-if device.type == 'cuda':
-    print(f'  GPU: {torch.cuda.get_device_name()}')
-    print(f'  VRAM: {torch.cuda.get_device_properties(0).total_mem / 1e9:.1f} GB')
 
 PROCESSED = Path('../processed')
 OUT       = Path('outputs'); OUT.mkdir(exist_ok=True)
 os.makedirs('../models', exist_ok=True)
+
+# ── Timestamped log file ──────────────────────────────────────────────────────
+class _Tee:
+    """Duplicate stdout to a timestamped log file."""
+    def __init__(self, path, stdout):
+        self._f   = open(path, 'w', buffering=1, encoding='utf-8')
+        self._out = stdout
+    def write(self, s):
+        if s:
+            self._f.write(s)
+        return self._out.write(s)
+    def flush(self):
+        self._f.flush()
+        self._out.flush()
+
+_ts      = datetime.now().strftime('%Y%m%d_%H%M')
+LOG_FILE = f'../training_{_ts}.log'
+sys.stdout = _Tee(LOG_FILE, sys.stdout)
+
+print(f'Device: {device}')
+if device.type == 'cuda':
+    print(f'  GPU: {torch.cuda.get_device_name()}')
+    print(f'  VRAM: {torch.cuda.get_device_properties(0).total_mem / 1e9:.1f} GB')
+print(f'Log:    {LOG_FILE}')
 
 # ── Load preprocessed data ───────────────────────────────────────────────────
 vocab      = pd.read_parquet(PROCESSED / 'track_vocab.parquet')
