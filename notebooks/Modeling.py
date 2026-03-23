@@ -105,6 +105,19 @@ print(f'\nVocab truncated to {VOCAB_LIMIT:,} tracks  |  '
       f'Coverage: {kept_freq/total_freq*100:.1f}%  |  '
       f'UNK rate: {(1-kept_freq/total_freq)*100:.1f}%')
 
+print(f'\nHyperparameters')
+print(f'  VOCAB_LIMIT  = {VOCAB_LIMIT:,}')
+print(f'  MAX_SEQ_LEN  = {MAX_SEQ_LEN}')
+print(f'  EMBED_DIM    = {EMBED_DIM}')
+print(f'  HIDDEN_DIM   = {HIDDEN_DIM}')
+print(f'  NUM_LAYERS   = {NUM_LAYERS}')
+print(f'  NUM_HEADS    = {NUM_HEADS}')
+print(f'  DROPOUT      = {DROPOUT}')
+print(f'  BATCH_SIZE   = {BATCH_SIZE}')
+print(f'  LR           = {LR}')
+print(f'  NUM_EPOCHS   = {NUM_EPOCHS}')
+print(f'  TRAIN_SUBSET = {TRAIN_SUBSET}')
+
 
 # ---
 # ## 1. Data Preparation
