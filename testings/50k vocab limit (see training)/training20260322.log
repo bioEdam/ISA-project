@@ -8,6 +8,19 @@ Val:    100,001 seqs (10%)
 Test:   100,001 seqs (10%)
 
 Vocab truncated to 50,000 tracks  |  Coverage: 76.9%  |  UNK rate: 23.1%
+
+Hyperparameters:
+    VOCAB_LIMIT  = 50,000
+    MAX_SEQ_LEN  = 50
+    EMBED_DIM    = 128
+    HIDDEN_DIM   = 256
+    NUM_LAYERS   = 2
+    NUM_HEADS    = 4
+    DROPOUT      = 0.2
+    BATCH_SIZE   = 64
+    LR           = 1e-3
+    NUM_EPOCHS   = 15
+    TRAIN_SUBSET = None
 Train: 799,998 seqs  (12,500 batches)
 Val:   100,001 seqs  (1,563 batches)
 Test:  100,001 seqs  (1,563 batches)
@@ -58,16 +71,3 @@ Experiment 2: Embedding Dimension
   embed_dim= 64  val_loss=6.2954  val_acc=0.2212  params=9,823,954
   embed_dim=128  val_loss=5.9669  val_acc=0.2370  params=19,941,970
   embed_dim=256  val_loss=5.9336  val_acc=0.2385  params=41,210,194
-/home/candrak/isa-project/notebooks/Modeling.py:364: UserWarning: FigureCanvasAgg is non-interactive, and thus cannot be shown
-  plt.show()
-Sequence length results:
- max_len  val_loss  val_acc
-      20    6.2498   0.2270
-      50    5.9607   0.2384
-     100    5.8374   0.2476
-
-Embedding dimension results:
- embed_dim  val_loss  val_acc   params
-        64    6.2954   0.2212  9823954
-       128    5.9669   0.2370 19941970
-       256    5.9336   0.2385 41210194
