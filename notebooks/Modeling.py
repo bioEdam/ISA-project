@@ -118,16 +118,6 @@ print(f'  LR           = {LR}')
 print(f'  NUM_EPOCHS   = {NUM_EPOCHS}')
 print(f'  TRAIN_SUBSET = {TRAIN_SUBSET}')
 
-
-# ---
-# ## 1. Data Preparation
-# 
-# For each playlist sequence `[t1, t2, ..., tn]`:
-# - **Input:** `[t1, ..., tn-1]` — all tracks except the last
-# - **Target:** `[t2, ..., tn]` — the next track at each position
-# 
-# Sequences longer than `MAX_SEQ_LEN` are truncated; shorter ones are padded within each batch. Tracks with `corpus_idx >= VOCAB_LIMIT` are mapped to a special `UNK` token.
-
 # In[2]:
 
 
@@ -178,24 +168,6 @@ print(f'Train: {len(train_ds):,} seqs  ({len(train_dl):,} batches)')
 print(f'Val:   {len(val_ds):,} seqs  ({len(val_dl):,} batches)')
 print(f'Test:  {len(test_ds):,} seqs  ({len(test_dl):,} batches)')
 
-
-# ---
-# ## 2. Model Architectures
-# 
-# Both architectures are defined in `src/models.py` and imported above.
-# 
-# ### 2.1 GRU Recommender
-# 
-# The GRU processes tracks sequentially, building a hidden state that captures listening context. It is inherently causal — no future leakage, no masking needed.
-# 
-# `Embedding -> Dropout -> GRU (2 layers, 256 hidden) -> Dropout -> Linear`
-# 
-# ### 2.2 Transformer Recommender
-# 
-# The Transformer processes all positions in parallel using multi-head self-attention with a causal mask. Learnable positional embeddings encode track order.
-# 
-# `Embedding + PosEmbedding -> Dropout -> TransformerEncoder (2 layers, 4 heads, causal) -> Linear`
-
 # In[3]:
 
 
@@ -208,18 +180,6 @@ transformer_model = TransformerRecommender(
     NUM_TOKENS, EMBED_DIM, NUM_HEADS, NUM_LAYERS, DROPOUT, MAX_SEQ_LEN, PAD_IDX
 ).to(device)
 print(f'Transformer: {sum(p.numel() for p in transformer_model.parameters()):>12,} parameters')
-
-
-# ---
-# ## 3. Training
-# 
-# Both models are trained identically:
-# - **Loss:** Cross-entropy with padding ignored
-# - **Optimizer:** Adam (lr = 1e-3)
-# - **Scheduler:** ReduceLROnPlateau — halves LR after 2 stagnant epochs
-# - **Gradient clipping:** Max norm 1.0
-# - **Checkpointing:** Best model (by validation loss) saved to `models/`
-
 # In[4]:
 
 
@@ -401,12 +361,3 @@ print('Sequence length results:')
 print(pd.DataFrame(seq_results).to_string(index=False))
 print('\nEmbedding dimension results:')
 print(pd.DataFrame(emb_results).to_string(index=False))
-
-
-# ### 4.3 Experiment Analysis
-# 
-# **Sequence length:** Longer context windows give the model more information about the playlist's thematic trajectory. However, very long sequences may introduce noise from early, less relevant tracks. The results show the trade-off between richer context and diminishing returns.
-# 
-# **Embedding dimension:** Larger embeddings capture finer distinctions between tracks but increase model size and may overfit. The parameter counts show the computational cost, and the accuracy results indicate the optimal balance for this dataset.
-# 
-# These experiments guided the final hyperparameter selection used in the main training runs above.
