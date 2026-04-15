@@ -43,99 +43,151 @@ RANDOM_SEED = 42
 np.random.seed(RANDOM_SEED)
 
 # ── Load Data ────────────────────────────────────────────
+print("\nLoading data...")
 audio     = pd.read_parquet(PROCESSED / 'track_audio_features.parquet')
 tracks    = pd.read_parquet(PROCESSED / 'filtered_tracks_audio.parquet')
 playlists = pd.read_parquet(PROCESSED / 'filtered_playlists_audio.parquet')
 
-print(f'Playlists    : {len(playlists):,}')
-print(f'Track entries: {len(tracks):,}')
-print(f'Unique tracks: {tracks["track_uri"].nunique():,}')
+print(f'  Playlists    : {len(playlists):,}')
+print(f'  Track entries: {len(tracks):,}')
+print(f'  Unique tracks: {tracks["track_uri"].nunique():,}')
 
 # ── Feature Columns ──────────────────────────────────────
 meta_cols = {
-    'track_uri','track_name','artist_uri','artist_name',
-    'album_uri','album_name','track_dur_ms'
+    'track_uri', 'track_name', 'artist_uri', 'artist_name',
+    'album_uri', 'album_name', 'track_dur_ms'
 }
+
+# Drop low-signal and categorical features not suitable for cosine similarity
+drop_cols = {'key', 'time_signature', 'duration_ms'}
 
 feature_cols = [
     c for c in audio.columns
-    if c not in meta_cols and audio[c].dtype in ['float64','int64','float32']
+    if c not in meta_cols
+    and c not in drop_cols
+    and audio[c].dtype in ['float64', 'int64', 'float32']
 ]
 
-print(f'Audio feature columns ({len(feature_cols)}): {feature_cols}')
+print(f'\nAudio feature columns ({len(feature_cols)}): {feature_cols}')
 
 # ── Filter Valid Tracks ──────────────────────────────────
+print("\nFiltering tracks with full features...")
 track_features = audio[audio['track_uri'].isin(tracks['track_uri'].unique())].copy()
 track_features = track_features[['track_uri'] + feature_cols].dropna()
+print(f'  Tracks with full features: {len(track_features):,}')
 
-print(f'Tracks with full features: {len(track_features):,}')
+# ── Clip outliers before scaling ─────────────────────────
+print("Clipping outliers...")
+for col in ['loudness', 'tempo', 'popularity']:
+    if col in feature_cols:
+        lo = track_features[col].quantile(0.01)
+        hi = track_features[col].quantile(0.99)
+        track_features[col] = track_features[col].clip(lo, hi)
 
 # ── Normalize Features ───────────────────────────────────
+print("Scaling features...")
 scaler = StandardScaler()
 track_features[feature_cols] = scaler.fit_transform(track_features[feature_cols])
 
 # Save scaler
 scaler_path = MODEL_DIR / "scaler.npy"
 np.save(scaler_path, scaler.mean_)
-print(f"Saved scaler stats → {scaler_path}")
+print(f"  Saved scaler stats → {scaler_path}")
 
-# ── Build Lookup ─────────────────────────────────────────
-track_to_vec = {
-    row['track_uri']: row[feature_cols].values
-    for _, row in track_features.iterrows()
-}
+# ── Build Lookup (vectorized, not iterrows) ───────────────
+print("Building track feature lookup...")
+feature_array = track_features[feature_cols].values                     # (N, F) numpy array
+feature_index = track_features['track_uri'].tolist()                    # list of URIs
+uri_to_pos    = {uri: i for i, uri in enumerate(feature_index)}         # URI -> row index
+print(f"  Feature matrix shape: {feature_array.shape}")
 
-# ── Evaluation ───────────────────────────────────────────
-def evaluate_playlist(seed_tracks, ground_truth):
-    if len(seed_tracks) == 0:
+# ── Build pid -> ordered track URI list ──────────────────
+print("Building playlist track lists...")
+pid_to_uris = (
+    tracks
+    .sort_values('pos')
+    .groupby('pid')['track_uri']
+    .apply(list)
+    .to_dict()
+)
+print(f"  Playlists indexed: {len(pid_to_uris):,}")
+
+# ── Evaluation functions ──────────────────────────────────
+def evaluate_playlist(seed_uris: list[str], k_max: int) -> list[str]:
+    """Return ranked candidate URIs by cosine similarity to seed mean vector."""
+    positions = [uri_to_pos[u] for u in seed_uris if u in uri_to_pos]
+    if not positions:
         return []
-
-    seed_vecs = [track_to_vec[t] for t in seed_tracks if t in track_to_vec]
-    if len(seed_vecs) == 0:
-        return []
-
-    profile = np.mean(seed_vecs, axis=0)
-
-    candidates = list(track_to_vec.keys())
-    matrix = np.array([track_to_vec[t] for t in candidates])
-
-    sims = cosine_similarity(profile.reshape(1, -1), matrix)[0]
-
-    ranked = [candidates[i] for i in np.argsort(-sims)]
-    return ranked
+    profile = feature_array[positions].mean(axis=0, keepdims=True)   # (1, F)
+    sims    = cosine_similarity(profile, feature_array)[0]            # (N,)
+    seen    = set(seed_uris)
+    ranked  = [
+        feature_index[i]
+        for i in np.argsort(-sims)
+        if feature_index[i] not in seen
+    ]
+    return ranked[:k_max]
 
 
-def recall_at_k(preds, truth, k):
-    return len(set(preds[:k]) & set(truth)) / len(truth) if truth else 0
+def recall_at_k(preds: list, truth: list, k: int) -> float:
+    return len(set(preds[:k]) & set(truth)) / len(truth) if truth else 0.0
+
+
+def precision_at_k(preds: list, truth: list, k: int) -> float:
+    return len(set(preds[:k]) & set(truth)) / k if k > 0 else 0.0
 
 
 # ── Run Evaluation ───────────────────────────────────────
-results = []
+print(f"\nRunning evaluation on up to {MAX_EVAL:,} playlists...")
+t_eval = time.time()
 
-sample_playlists = playlists.sample(min(MAX_EVAL, len(playlists)), random_state=RANDOM_SEED)
+rng        = np.random.default_rng(RANDOM_SEED)
+all_pids   = playlists['pid'].tolist()
+sample_pids = list(rng.choice(all_pids, min(MAX_EVAL, len(all_pids)), replace=False))
 
-for i, row in enumerate(sample_playlists.itertuples()):
-    tracks_list = row.track_uris
+results    = []
+skipped    = 0
+k_max      = max(K_VALUES)
 
-    split = int(len(tracks_list) * SEED_RATIO)
-    seed = tracks_list[:split]
-    gt   = tracks_list[split:]
+for i, pid in enumerate(sample_pids):
+    tracks_list = pid_to_uris.get(pid, [])
+    if len(tracks_list) < 5:
+        skipped += 1
+        continue
 
-    preds = evaluate_playlist(seed, gt)
+    split = max(1, int(len(tracks_list) * SEED_RATIO))
+    seed  = tracks_list[:split]
+    gt    = tracks_list[split:]
+    if not gt:
+        skipped += 1
+        continue
 
-    res = {f"recall@{k}": recall_at_k(preds, gt, k) for k in K_VALUES}
+    preds = evaluate_playlist(seed, k_max)
+
+    res = {}
+    for k in K_VALUES:
+        res[f'precision@{k}'] = precision_at_k(preds, gt, k)
+        res[f'recall@{k}']    = recall_at_k(preds, gt, k)
     results.append(res)
 
-    if i % 500 == 0:
-        print(f"Processed {i} playlists...")
+    if (i + 1) % 500 == 0:
+        elapsed = time.time() - t_eval
+        print(f"  [{i+1:>5}/{len(sample_pids)}]  "
+              f"evaluated {len(results):,}  |  "
+              f"skipped {skipped}  |  "
+              f"{elapsed:.1f}s elapsed")
+
+print(f"\nEvaluation complete: {len(results):,} playlists evaluated, {skipped} skipped")
 
 # ── Aggregate Results ────────────────────────────────────
-df = pd.DataFrame(results)
+df      = pd.DataFrame(results)
 summary = df.mean().to_dict()
 
 print("\nFinal Results:")
+print(f"{'Metric':<15} {'Score':>8}")
+print("-" * 25)
 for k, v in summary.items():
-    print(f"{k}: {v:.4f}")
+    print(f"{k:<15} {v:>8.4f}")
 
 # ── Save Results ─────────────────────────────────────────
 results_path = TEST_DIR / "evaluation_results.csv"
@@ -148,5 +200,4 @@ with open(summary_path, "w") as f:
 
 print(f"\nSaved results → {results_path}")
 print(f"Saved summary → {summary_path}")
-
-print(f"\nDone in {time.time() - t0:.1f}s")
+print(f"\nTotal time: {time.time() - t0:.1f}s")
