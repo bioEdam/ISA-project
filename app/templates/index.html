@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GRU Music Recommender</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header>
+  <h1>GRU Music Recommender</h1>
+  <p>Sequential next-track prediction trained on 1M Spotify playlists</p>
+</header>
+
+<div class="container">
+
+  <!-- Left column: Search & Browse -->
+  <div>
+    <div class="panel">
+      <h2>Search Tracks</h2>
+      <div class="search-box">
+        <input type="text" id="search-input" placeholder="Search by track name or artist..." autocomplete="off">
+      </div>
+      <div class="browse-row">
+        <button class="btn-secondary btn-small" id="btn-popular">Browse Popular</button>
+      </div>
+      <ul class="track-list" id="search-results">
+        <div class="empty-state">Loading popular tracks...</div>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Right column: Seed Playlist & Recommendations -->
+  <div>
+    <div class="panel">
+      <h2>Seed Playlist</h2>
+      <div class="seed-controls">
+        <span id="seed-count">0 tracks</span>
+        <span class="context-badge" id="context-badge"></span>
+        <button class="btn-secondary btn-small" id="btn-clear">Clear</button>
+      </div>
+      <ul class="track-list" id="seed-list">
+        <div class="empty-state">Your seed playlist is empty. Search and add tracks above.</div>
+      </ul>
+    </div>
+
+    <div class="panel" style="margin-top: 1.5rem;">
+      <h2>Recommendations</h2>
+      <div class="seed-controls">
+        <button class="btn-primary" id="btn-recommend">Get Recommendations</button>
+        <div class="k-select">
+          <label for="k-select">Top-K:</label>
+          <select id="k-select">
+            <option value="5">5</option>
+            <option value="10" selected>10</option>
+            <option value="20">20</option>
+          </select>
+        </div>
+      </div>
+      <div id="rec-results">
+        <div class="empty-state">Add tracks to your seed playlist, then click "Get Recommendations".</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
