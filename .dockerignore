@@ -5,12 +5,11 @@ __pycache__/
 *.pyc
 data/
 notebooks/
-models/
+models/desktop.ini
 *.ipynb
 *.zip
 *.pdf
 bash.exe.stackdump
 src/__pycache__/
 demo/__pycache__/
-testings/50k vocab limit/
-testings/100k vocab limit/transformer_best.pt
+testings/

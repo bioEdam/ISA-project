@@ -13,7 +13,7 @@ COPY app/ app/
 
 COPY processed/track_vocab.parquet processed/track_vocab.parquet
 COPY processed/track_meta.parquet processed/track_meta.parquet
-COPY "models/gru_best.pt" "models/gru_best.pt"
+COPY models/gru_best.pt models/gru_best.pt
 
 EXPOSE 8000
 
