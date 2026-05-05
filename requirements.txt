@@ -9,3 +9,8 @@ ipykernel
 pyarrow
 python-dotenv
 torch
+gensim
+implicit
+fastapi
+uvicorn[standard]
+jinja2

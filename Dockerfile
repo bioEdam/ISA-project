@@ -2,18 +2,26 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+
 RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements-app.txt .
+RUN pip install --no-cache-dir -r requirements-app.txt
 
 COPY src/models.py src/models.py
 COPY demo/recommender.py demo/recommender.py
 COPY app/ app/
 
-COPY processed/track_vocab.parquet processed/track_vocab.parquet
-COPY processed/track_meta.parquet processed/track_meta.parquet
-COPY models/gru_best.pt models/gru_best.pt
+ARG RELEASE_URL=https://github.com/bioEdam/ISA-project/releases/download/v1.0
+RUN mkdir -p processed models && \
+    curl -L -o processed/track_vocab.parquet ${RELEASE_URL}/track_vocab.parquet && \
+    curl -L -o processed/track_meta.parquet  ${RELEASE_URL}/track_meta.parquet && \
+    curl -L -o models/gru_best.pt            ${RELEASE_URL}/gru_best.pt
+
+#COPY processed/track_vocab.parquet processed/track_vocab.parquet
+#COPY processed/track_meta.parquet processed/track_meta.parquet
+#COPY models/gru_best.pt models/gru_best.pt
 
 EXPOSE 8000
 
