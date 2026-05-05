@@ -44,7 +44,7 @@ class GRUDemo:
     NUM_LAYERS  = 2
     DROPOUT     = 0.2
 
-    CHECKPOINT  = Path("testings") / "100k vocab limit" / "gru_best.pt"
+    CHECKPOINT  = Path("models") / "gru_best.pt"
 
     def __init__(self, root: Path):
         self.root = Path(root)
