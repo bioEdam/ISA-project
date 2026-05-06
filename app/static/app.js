@@ -62,15 +62,34 @@ function renderSearchResults(tracks) {
         <div class="name">${esc(t.track_name)}</div>
         <div class="artist">${esc(t.artist_name)}</div>
       </div>
-      <button class="add-btn" onclick="addToSeed(${t.corpus_idx}, '${escAttr(t.track_name)}', '${escAttr(t.artist_name)}')">+ Add</button>
+      <button class="add-btn" data-corpus-idx="${t.corpus_idx}" onclick="addToSeed(${t.corpus_idx}, '${escAttr(t.track_name)}', '${escAttr(t.artist_name)}')">+ Add</button>
     </li>
   `).join("");
 }
 
 function addToSeed(corpus_idx, track_name, artist_name) {
-  if (seed.some((t) => t.corpus_idx === corpus_idx)) return;
+  if (seed.some((t) => t.corpus_idx === corpus_idx)) {
+    showDuplicateWarning(corpus_idx);
+    return;
+  }
   seed.push({ corpus_idx, track_name, artist_name });
   renderSeed();
+}
+
+function showDuplicateWarning(corpus_idx) {
+  const btns = document.querySelectorAll(`[data-corpus-idx="${corpus_idx}"]`);
+  btns.forEach((btn) => {
+    if (btn.dataset.warning) return;
+    btn.dataset.warning = "1";
+    const orig = btn.textContent;
+    btn.textContent = "Already added";
+    btn.classList.add("add-btn-warning");
+    setTimeout(() => {
+      btn.textContent = orig;
+      btn.classList.remove("add-btn-warning");
+      delete btn.dataset.warning;
+    }, 1500);
+  });
 }
 
 function removeFromSeed(idx) {
@@ -154,7 +173,7 @@ function renderRecommendations(recs) {
         <div class="name">${esc(r.track_name)}</div>
         <div class="artist">${esc(r.artist_name)}</div>
       </div>
-      <button class="add-btn" onclick="addToSeed(${r.corpus_idx}, '${escAttr(r.track_name)}', '${escAttr(r.artist_name)}')">+ Add</button>
+      <button class="add-btn" data-corpus-idx="${r.corpus_idx}" onclick="addToSeed(${r.corpus_idx}, '${escAttr(r.track_name)}', '${escAttr(r.artist_name)}')">+ Add</button>
     </div>
   `).join("");
 }

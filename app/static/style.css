@@ -175,6 +175,7 @@ button:active { transform: scale(0.97); }
   border-radius: 6px;
   font-size: 0.78rem;
   white-space: nowrap;
+  margin-left: auto;
 }
 
 .track-item .add-btn:hover {
@@ -265,11 +266,18 @@ button:active { transform: scale(0.97); }
   border-radius: 6px;
   font-size: 0.78rem;
   white-space: nowrap;
+  margin-left: auto;
 }
 
 .rec-item .add-btn:hover {
   background: #1db954;
   color: #000;
+}
+
+.add-btn-warning {
+  border-color: #ffa500 !important;
+  color: #ffa500 !important;
+  background: transparent !important;
 }
 
 .loading {
