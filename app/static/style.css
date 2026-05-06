@@ -257,6 +257,21 @@ button:active { transform: scale(0.97); }
   color: #888;
 }
 
+.rec-item .add-btn {
+  background: transparent;
+  border: 1px solid #1db954;
+  color: #1db954;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.rec-item .add-btn:hover {
+  background: #1db954;
+  color: #000;
+}
+
 .loading {
   text-align: center;
   padding: 1.5rem;

@@ -154,6 +154,7 @@ function renderRecommendations(recs) {
         <div class="name">${esc(r.track_name)}</div>
         <div class="artist">${esc(r.artist_name)}</div>
       </div>
+      <button class="add-btn" onclick="addToSeed(${r.corpus_idx}, '${escAttr(r.track_name)}', '${escAttr(r.artist_name)}')">+ Add</button>
     </div>
   `).join("");
 }
