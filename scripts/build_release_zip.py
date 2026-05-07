@@ -1,11 +1,3 @@
-"""
-Build a clean zip for the mini-project 3 submission.
-
-Contains only the files needed to build and run the Docker image.
-Run from the project root:
-    python scripts/build_release_zip.py
-"""
-
 import zipfile
 from pathlib import Path
 
@@ -23,6 +15,7 @@ FILES = [
     "requirements-app.txt",
     "docs/installation.md",
     "docs/user_manual.md",
+    "README.md",
 ]
 
 OUT = ROOT / "model-deployment-code.zip"
