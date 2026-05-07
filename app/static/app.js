@@ -61,17 +61,17 @@ function renderSearchResults(tracks) {
     <li class="track-item">
       <span class="rank">${i + 1}</span>
       <div class="info">
-        <div class="name">${esc(t.track_name)}</div>
-        <div class="artist">${esc(t.artist_name)}</div>
+        <div class="name">${trackLink(t.track_name, t.track_uri)}</div>
+        <div class="artist">${artistLink(t.artist_name, t.artist_uri)}</div>
       </div>
-      <button class="add-btn${added ? " add-btn-disabled" : ""}" data-corpus-idx="${t.corpus_idx}" onclick="addToSeed(${t.corpus_idx}, '${escAttr(t.track_name)}', '${escAttr(t.artist_name)}')" ${added ? "disabled" : ""}>${added ? "Added" : "+ Add"}</button>
+      <button class="add-btn${added ? " add-btn-disabled" : ""}" data-corpus-idx="${t.corpus_idx}" onclick="addToSeed(${t.corpus_idx}, '${escAttr(t.track_name)}', '${escAttr(t.artist_name)}', '${escAttr(t.track_uri || "")}', '${escAttr(t.artist_uri || "")}')" ${added ? "disabled" : ""}>${added ? "Added" : "+ Add"}</button>
     </li>`;
   }).join("");
 }
 
-function addToSeed(corpus_idx, track_name, artist_name) {
+function addToSeed(corpus_idx, track_name, artist_name, track_uri, artist_uri) {
   if (seed.some((t) => t.corpus_idx === corpus_idx)) return;
-  seed.push({ corpus_idx, track_name, artist_name });
+  seed.push({ corpus_idx, track_name, artist_name, track_uri: track_uri || "", artist_uri: artist_uri || "" });
   renderSeed();
   updateAddButtons(corpus_idx, true);
 }
@@ -134,8 +134,8 @@ function renderSeed() {
     <li class="track-item">
       <span class="rank">${i + 1}</span>
       <div class="info">
-        <div class="name">${esc(t.track_name)}</div>
-        <div class="artist">${esc(t.artist_name)}</div>
+        <div class="name">${trackLink(t.track_name, t.track_uri)}</div>
+        <div class="artist">${artistLink(t.artist_name, t.artist_uri)}</div>
       </div>
       <button class="btn-danger" onclick="removeFromSeed(${i})" title="Remove">&#10005;</button>
     </li>
@@ -172,12 +172,31 @@ function renderRecommendations(recs) {
     <div class="rec-item">
       <span class="rank">#${r.rank}</span>
       <div class="info">
-        <div class="name">${esc(r.track_name)}</div>
-        <div class="artist">${esc(r.artist_name)}</div>
+        <div class="name">${trackLink(r.track_name, r.track_uri)}</div>
+        <div class="artist">${artistLink(r.artist_name, r.artist_uri)}</div>
       </div>
-      <button class="add-btn" data-corpus-idx="${r.corpus_idx}" onclick="addToSeed(${r.corpus_idx}, '${escAttr(r.track_name)}', '${escAttr(r.artist_name)}')">+ Add</button>
+      <button class="add-btn" data-corpus-idx="${r.corpus_idx}" onclick="addToSeed(${r.corpus_idx}, '${escAttr(r.track_name)}', '${escAttr(r.artist_name)}', '${escAttr(r.track_uri || "")}', '${escAttr(r.artist_uri || "")}')">+ Add</button>
     </div>
   `).join("");
+}
+
+function spotifyUrl(uri) {
+  if (!uri) return "";
+  const parts = uri.split(":");
+  if (parts.length === 3) return `https://open.spotify.com/${parts[1]}/${parts[2]}`;
+  return "";
+}
+
+function trackLink(name, trackUri) {
+  const url = spotifyUrl(trackUri);
+  if (url) return `<a href="${esc(url)}" target="_blank" rel="noopener" class="spotify-link">${esc(name)}</a>`;
+  return esc(name);
+}
+
+function artistLink(name, artistUri) {
+  const url = spotifyUrl(artistUri);
+  if (url) return `<a href="${esc(url)}" target="_blank" rel="noopener" class="spotify-link artist-link">${esc(name)}</a>`;
+  return esc(name);
 }
 
 function esc(s) {

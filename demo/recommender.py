@@ -25,10 +25,13 @@ def _rows_to_dicts(df) -> list[dict]:
             "corpus_freq": int(freq),
             "track_name":  tname,
             "artist_name": aname,
+            "track_uri":   turi,
+            "artist_uri":  auri,
         }
-        for idx, freq, tname, aname in zip(
+        for idx, freq, tname, aname, turi, auri in zip(
             df["corpus_idx"], df["corpus_freq"],
             df["track_name"], df["artist_name"],
+            df["track_uri"], df["artist_uri"],
         )
     ]
 
@@ -57,7 +60,7 @@ class GRUDemo:
 
         # -- track metadata (names) --
         meta = pd.read_parquet(self.root / "processed" / "track_meta.parquet",
-                               columns=["track_uri", "track_name", "artist_name"])
+                               columns=["track_uri", "track_name", "artist_uri", "artist_name"])
 
         # join: keep only vocab tracks that have metadata (should be ~100%)
         catalog = vocab.merge(meta, on="track_uri", how="inner")
@@ -73,10 +76,13 @@ class GRUDemo:
                 "corpus_freq": int(freq),
                 "track_name":  tname,
                 "artist_name": aname,
+                "track_uri":   turi,
+                "artist_uri":  auri,
             }
-            for idx, freq, tname, aname in zip(
+            for idx, freq, tname, aname, turi, auri in zip(
                 catalog["corpus_idx"], catalog["corpus_freq"],
                 catalog["track_name"], catalog["artist_name"],
+                catalog["track_uri"], catalog["artist_uri"],
             )
         }
 
@@ -144,6 +150,8 @@ class GRUDemo:
                 "corpus_freq": row.get("corpus_freq", 0),
                 "track_name":  row.get("track_name", "<unknown>"),
                 "artist_name": row.get("artist_name", "<unknown>"),
+                "track_uri":   row.get("track_uri", ""),
+                "artist_uri":  row.get("artist_uri", ""),
             })
             rank += 1
             if rank > k:
