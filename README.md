@@ -193,13 +193,16 @@ Startup takes approximately 30-60 seconds as the model and vocabulary are loaded
 
 The trained model checkpoint and required data files are hosted on [GitHub Releases (v1.0)](https://github.com/bioEdam/ISA-project/releases/tag/v1.0) so the Docker build can fetch them without bundling large files in the repository:
 
-| File                  | Size    | Purpose                                 |
-|-----------------------|---------|-----------------------------------------|
-| `track_vocab.parquet` | ~64 MB  | Track vocabulary (URI to index mapping) |
-| `track_meta.parquet`  | ~216 MB | Track metadata (names, artists)         |
-| `gru_best.pt`         | ~150 MB | Trained GRU model checkpoint            |
+| File                        | Size    | Purpose                                 |
+|-----------------------------|---------|-----------------------------------------|
+| `track_vocab.parquet`       | ~64 MB  | Track vocabulary (URI to index mapping) |
+| `track_meta.parquet`        | ~216 MB | Track metadata (names, artists)         |
+| `gru_best.pt`               | ~150 MB | Trained GRU model checkpoint            |
+| `model-deployment-code.zip` | —       | Minimal deployment package (see below)  |
 
-Alternatively, the Dockerfile can copy these files from a local `processed/` and `models/` directory (see comments in the Dockerfile).
+The release also includes a **`model-deployment-code.zip`** archive containing only the files needed to build and run the Docker image — no notebooks, no training scripts, no data pipeline code. It includes the Dockerfile, the FastAPI app, the inference layer (`demo/recommender.py`, `src/models.py`), runtime dependencies (`requirements-app.txt`), and documentation. This is the self-contained package intended for deployment.
+
+Alternatively, the Dockerfile can copy the model/data files from a local `processed/` and `models/` directory instead of downloading them (see comments in the Dockerfile).
 
 ### Documentation
 

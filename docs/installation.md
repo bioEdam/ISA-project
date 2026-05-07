@@ -9,6 +9,9 @@
 
 ## Quick Start
 
+The GitHub release includes a **`model-deployment-code.zip`** archive containing only the files needed to build and run the application — no notebooks or training scripts. Download it from:
+https://github.com/bioEdam/ISA-project/releases/tag/v1.0
+
 1. Extract the zip archive
 2. Open a terminal in the extracted directory
 3. Build and run:
@@ -24,11 +27,11 @@ docker run -p 8000:8000 gru-recommender
 
 The Docker build automatically downloads the trained model and data files (~430 MB) from GitHub Releases:
 
-| File | Size | Purpose |
-|------|------|---------|
-| `track_vocab.parquet` | ~64 MB | Track vocabulary (URI to index mapping) |
-| `track_meta.parquet` | ~216 MB | Track metadata (names, artists) |
-| `gru_best.pt` | ~150 MB | Trained GRU model checkpoint |
+| File                  | Size    | Purpose                                 |
+|-----------------------|---------|-----------------------------------------|
+| `track_vocab.parquet` | ~64 MB  | Track vocabulary (URI to index mapping) |
+| `track_meta.parquet`  | ~216 MB | Track metadata (names, artists)         |
+| `gru_best.pt`         | ~150 MB | Trained GRU model checkpoint            |
 
 Build time is approximately 5-10 minutes depending on network speed.
 
