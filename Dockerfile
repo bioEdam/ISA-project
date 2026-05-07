@@ -9,6 +9,13 @@ RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/wh
 COPY requirements-app.txt .
 RUN pip install --no-cache-dir -r requirements-app.txt
 
+
+# Uncommnent if you want to copy the files from local
+#COPY processed/track_vocab.parquet processed/track_vocab.parquet
+#COPY processed/track_meta.parquet processed/track_meta.parquet
+#COPY models/gru_best.pt models/gru_best.pt
+
+# Comment out if you have already copied the files from local
 ARG RELEASE_URL=https://github.com/bioEdam/ISA-project/releases/download/v1.0
 RUN mkdir -p processed models && \
     curl -L -o processed/track_vocab.parquet ${RELEASE_URL}/track_vocab.parquet && \
