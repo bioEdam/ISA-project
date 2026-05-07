@@ -280,6 +280,15 @@ button:active { transform: scale(0.97); }
   background: transparent !important;
 }
 
+.add-btn:disabled,
+.add-btn-disabled {
+  border-color: #444 !important;
+  color: #555 !important;
+  background: transparent !important;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+
 .loading {
   text-align: center;
   padding: 1.5rem;

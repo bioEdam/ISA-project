@@ -112,9 +112,12 @@ class GRUDemo:
         """
         Given a list of corpus indices (seed tracks), return top-k next-track predictions.
         Only the last MAX_SEQ_LEN tokens are fed to the model.
+        Seed tracks are excluded from the results.
         """
         if not seed_corpus_idxs:
             return []
+
+        seed_set = set(seed_corpus_idxs)
 
         # OOV → UNK; truncate to last MAX_SEQ_LEN
         mapped = [
@@ -124,10 +127,16 @@ class GRUDemo:
 
         inp = torch.tensor([mapped], dtype=torch.long, device=self.device)
         logits = self.model(inp)[0, -1, : self.VOCAB_LIMIT]   # (VOCAB_LIMIT,)
-        topk = logits.topk(k).indices.tolist()
+
+        # Request extra candidates so we still return k after excluding seed tracks
+        n_candidates = min(k + len(seed_set), self.VOCAB_LIMIT)
+        candidates = logits.topk(n_candidates).indices.tolist()
 
         results = []
-        for rank, idx in enumerate(topk, 1):
+        rank = 1
+        for idx in candidates:
+            if idx in seed_set:
+                continue
             row = self.idx2row.get(idx, {})
             results.append({
                 "rank":        rank,
@@ -136,4 +145,7 @@ class GRUDemo:
                 "track_name":  row.get("track_name", "<unknown>"),
                 "artist_name": row.get("artist_name", "<unknown>"),
             })
+            rank += 1
+            if rank > k:
+                break
         return results

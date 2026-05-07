@@ -55,51 +55,53 @@ function renderSearchResults(tracks) {
     list.innerHTML = '<div class="empty-state">No tracks found. Try a different search.</div>';
     return;
   }
-  list.innerHTML = tracks.map((t, i) => `
+  list.innerHTML = tracks.map((t, i) => {
+    const added = seed.some((s) => s.corpus_idx === t.corpus_idx);
+    return `
     <li class="track-item">
       <span class="rank">${i + 1}</span>
       <div class="info">
         <div class="name">${esc(t.track_name)}</div>
         <div class="artist">${esc(t.artist_name)}</div>
       </div>
-      <button class="add-btn" data-corpus-idx="${t.corpus_idx}" onclick="addToSeed(${t.corpus_idx}, '${escAttr(t.track_name)}', '${escAttr(t.artist_name)}')">+ Add</button>
-    </li>
-  `).join("");
+      <button class="add-btn${added ? " add-btn-disabled" : ""}" data-corpus-idx="${t.corpus_idx}" onclick="addToSeed(${t.corpus_idx}, '${escAttr(t.track_name)}', '${escAttr(t.artist_name)}')" ${added ? "disabled" : ""}>${added ? "Added" : "+ Add"}</button>
+    </li>`;
+  }).join("");
 }
 
 function addToSeed(corpus_idx, track_name, artist_name) {
-  if (seed.some((t) => t.corpus_idx === corpus_idx)) {
-    showDuplicateWarning(corpus_idx);
-    return;
-  }
+  if (seed.some((t) => t.corpus_idx === corpus_idx)) return;
   seed.push({ corpus_idx, track_name, artist_name });
   renderSeed();
+  updateAddButtons(corpus_idx, true);
 }
 
-function showDuplicateWarning(corpus_idx) {
-  const btns = document.querySelectorAll(`[data-corpus-idx="${corpus_idx}"]`);
-  btns.forEach((btn) => {
-    if (btn.dataset.warning) return;
-    btn.dataset.warning = "1";
-    const orig = btn.textContent;
-    btn.textContent = "Already added";
-    btn.classList.add("add-btn-warning");
-    setTimeout(() => {
-      btn.textContent = orig;
-      btn.classList.remove("add-btn-warning");
-      delete btn.dataset.warning;
-    }, 1500);
+function updateAddButtons(corpus_idx, added) {
+  document.querySelectorAll(`.add-btn[data-corpus-idx="${corpus_idx}"]`).forEach((btn) => {
+    if (added) {
+      btn.classList.add("add-btn-disabled");
+      btn.disabled = true;
+      btn.textContent = "Added";
+    } else {
+      btn.classList.remove("add-btn-disabled");
+      btn.disabled = false;
+      btn.textContent = "+ Add";
+    }
   });
 }
 
 function removeFromSeed(idx) {
+  const removed = seed[idx];
   seed.splice(idx, 1);
   renderSeed();
+  updateAddButtons(removed.corpus_idx, false);
 }
 
 function clearSeed() {
+  const removedIdxs = seed.map((t) => t.corpus_idx);
   seed.length = 0;
   renderSeed();
+  removedIdxs.forEach((idx) => updateAddButtons(idx, false));
   $("#rec-results").innerHTML = '<div class="empty-state">Add tracks to your seed playlist, then click "Get Recommendations".</div>';
 }
 
