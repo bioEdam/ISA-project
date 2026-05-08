@@ -330,6 +330,43 @@ button:active { transform: scale(0.97); }
   color: #1db954;
 }
 
+.save-group {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  margin-left: auto;
+}
+
+.playlist-name-input {
+  width: 140px;
+  padding: 0.35rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid #2a2a2a;
+  background: #111;
+  color: #e0e0e0;
+  font-size: 0.82rem;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.playlist-name-input:focus {
+  border-color: #1db954;
+  background: #141414;
+}
+
+.playlist-name-input::placeholder { color: #555; }
+
+.save-status {
+  display: block;
+  font-size: 0.78rem;
+  min-height: 1.1em;
+  margin-bottom: 0.4rem;
+  padding-left: 0.25rem;
+}
+
+.save-status-ok  { color: #1db954; }
+.save-status-err { color: #e74c3c; }
+
 @media (max-width: 768px) {
   .container {
     grid-template-columns: 1fr;

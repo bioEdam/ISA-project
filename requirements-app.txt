@@ -4,3 +4,4 @@ pyarrow
 fastapi
 uvicorn[standard]
 jinja2
+asyncpg

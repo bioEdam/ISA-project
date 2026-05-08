@@ -38,8 +38,13 @@
       <div class="seed-controls">
         <span id="seed-count">0 tracks</span>
         <span class="context-badge" id="context-badge"></span>
-        <button class="btn-secondary btn-small" id="btn-clear">Clear</button>
+        <div class="save-group">
+          <input type="text" id="playlist-name" class="playlist-name-input" placeholder="Playlist name..." autocomplete="off">
+          <button class="btn-primary btn-small" id="btn-save">Save</button>
+          <button class="btn-secondary btn-small" id="btn-clear">Clear</button>
+        </div>
       </div>
+      <span class="save-status" id="save-status"></span>
       <ul class="track-list" id="seed-list">
         <div class="empty-state">Your seed playlist is empty. Search and add tracks above.</div>
       </ul>
@@ -66,6 +71,8 @@
 
 </div>
 
+<script src="/static/api.js"></script>
+<script src="/static/ui.js"></script>
 <script src="/static/app.js"></script>
 </body>
 </html>

@@ -1,212 +1,147 @@
 const seed = [];
-let debounceTimer = null;
+let recommendations = [];
 
-const $ = (sel) => document.querySelector(sel);
-const $$ = (sel) => document.querySelectorAll(sel);
-
-function init() {
-  $("#search-input").addEventListener("input", (e) => {
-    clearTimeout(debounceTimer);
-    const q = e.target.value.trim();
-    if (q.length < 2) { renderSearchResults([]); return; }
-    debounceTimer = setTimeout(() => searchTracks(q), 300);
-  });
-
-  $("#search-input").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      clearTimeout(debounceTimer);
-      const q = e.target.value.trim();
-      if (q) searchTracks(q);
-    }
-  });
-
-  $("#btn-popular").addEventListener("click", loadPopular);
-  $("#btn-recommend").addEventListener("click", getRecommendations);
-  $("#btn-clear").addEventListener("click", clearSeed);
-
-  loadPopular();
-}
-
-async function searchTracks(query) {
-  $("#search-results").innerHTML = '<div class="loading"><span class="spinner"></span>Searching...</div>';
-  try {
-    const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&max_results=20`);
-    const data = await res.json();
-    renderSearchResults(data);
-  } catch {
-    $("#search-results").innerHTML = '<div class="empty-state">Search failed. Try again.</div>';
-  }
-}
-
-async function loadPopular() {
-  $("#search-results").innerHTML = '<div class="loading"><span class="spinner"></span>Loading popular tracks...</div>';
-  try {
-    const res = await fetch("/api/top?n=20");
-    const data = await res.json();
-    renderSearchResults(data);
-  } catch {
-    $("#search-results").innerHTML = '<div class="empty-state">Failed to load popular tracks.</div>';
-  }
-}
-
-function renderSearchResults(tracks) {
-  const list = $("#search-results");
-  if (!tracks.length) {
-    list.innerHTML = '<div class="empty-state">No tracks found. Try a different search.</div>';
-    return;
-  }
-  list.innerHTML = tracks.map((t, i) => {
-    const added = seed.some((s) => s.corpus_idx === t.corpus_idx);
-    return `
-    <li class="track-item">
-      <span class="rank">${i + 1}</span>
-      <div class="info">
-        <div class="name">${trackLink(t.track_name, t.track_uri)}</div>
-        <div class="artist">${artistLink(t.artist_name, t.artist_uri)}</div>
-      </div>
-      <button class="add-btn${added ? " add-btn-disabled" : ""}" data-corpus-idx="${t.corpus_idx}" onclick="addToSeed(${t.corpus_idx}, '${escAttr(t.track_name)}', '${escAttr(t.artist_name)}', '${escAttr(t.track_uri || "")}', '${escAttr(t.artist_uri || "")}')" ${added ? "disabled" : ""}>${added ? "Added" : "+ Add"}</button>
-    </li>`;
-  }).join("");
-}
-
-function addToSeed(corpus_idx, track_name, artist_name, track_uri, artist_uri) {
-  if (seed.some((t) => t.corpus_idx === corpus_idx)) return;
-  seed.push({ corpus_idx, track_name, artist_name, track_uri: track_uri || "", artist_uri: artist_uri || "" });
-  renderSeed();
-  updateAddButtons(corpus_idx, true);
-}
-
-function updateAddButtons(corpus_idx, added) {
-  document.querySelectorAll(`.add-btn[data-corpus-idx="${corpus_idx}"]`).forEach((btn) => {
-    if (added) {
-      btn.classList.add("add-btn-disabled");
-      btn.disabled = true;
-      btn.textContent = "Added";
+function updateSaveBtn(state) {
+    const btn = document.querySelector("#btn-save");
+    if (!btn) return;
+    if (state === "unsaved") {
+        btn.textContent = "Save";
+        btn.disabled = false;
+        btn.className = "btn-primary btn-small";
+    } else if (state === "saved") {
+        btn.textContent = "Saved";
+        btn.disabled = true;
+        btn.className = "btn-secondary btn-small";
     } else {
-      btn.classList.remove("add-btn-disabled");
-      btn.disabled = false;
-      btn.textContent = "+ Add";
+        btn.textContent = "Save";
+        btn.disabled = true;
+        btn.className = "btn-secondary btn-small";
     }
-  });
+}
+
+function addToSeed(track) {
+    if (seed.some((t) => t.corpus_idx === track.corpus_idx)) return;
+    seed.push({
+        corpus_idx: track.corpus_idx,
+        track_name: track.track_name,
+        artist_name: track.artist_name,
+        track_uri: track.track_uri || "",
+        artist_uri: track.artist_uri || "",
+    });
+    updateSaveBtn("unsaved");
+    ui.renderSeed(seed, removeFromSeed);
+    ui.updateAddButtons(track.corpus_idx, true);
 }
 
 function removeFromSeed(idx) {
-  const removed = seed[idx];
-  seed.splice(idx, 1);
-  renderSeed();
-  updateAddButtons(removed.corpus_idx, false);
+    const removed = seed.splice(idx, 1)[0];
+    updateSaveBtn(seed.length ? "unsaved" : "empty");
+    ui.renderSeed(seed, removeFromSeed);
+    ui.updateAddButtons(removed.corpus_idx, false);
 }
 
 function clearSeed() {
-  const removedIdxs = seed.map((t) => t.corpus_idx);
-  seed.length = 0;
-  renderSeed();
-  removedIdxs.forEach((idx) => updateAddButtons(idx, false));
-  $("#rec-results").innerHTML = '<div class="empty-state">Add tracks to your seed playlist, then click "Get Recommendations".</div>';
+    const removedIdxs = seed.map((t) => t.corpus_idx);
+    seed.length = 0;
+    recommendations = [];
+    updateSaveBtn("empty");
+    ui.renderSeed(seed, removeFromSeed);
+    removedIdxs.forEach((idx) => ui.updateAddButtons(idx, false));
+    ui.setEmpty(document.querySelector("#rec-results"), 'Add tracks to your seed playlist, then click "Get Recommendations".');
 }
 
-function renderSeed() {
-  const list = $("#seed-list");
-  const badge = $("#context-badge");
-  const count = $("#seed-count");
-
-  count.textContent = `${seed.length} track${seed.length !== 1 ? "s" : ""}`;
-
-  if (!seed.length) {
-    list.innerHTML = '<div class="empty-state">Your seed playlist is empty. Search and add tracks above.</div>';
-    badge.className = "context-badge";
-    badge.textContent = "";
-    return;
-  }
-
-  if (seed.length <= 2) {
-    badge.className = "context-badge context-weak";
-    badge.textContent = "Weak context";
-  } else if (seed.length <= 10) {
-    badge.className = "context-badge context-good";
-    badge.textContent = "Good context";
-  } else {
-    badge.className = "context-badge context-excellent";
-    badge.textContent = "Excellent context";
-  }
-
-  list.innerHTML = seed.map((t, i) => `
-    <li class="track-item">
-      <span class="rank">${i + 1}</span>
-      <div class="info">
-        <div class="name">${trackLink(t.track_name, t.track_uri)}</div>
-        <div class="artist">${artistLink(t.artist_name, t.artist_uri)}</div>
-      </div>
-      <button class="btn-danger" onclick="removeFromSeed(${i})" title="Remove">&#10005;</button>
-    </li>
-  `).join("");
+async function doSearch(q) {
+    const list = document.querySelector("#search-results");
+    ui.setLoading(list, "Searching...");
+    try {
+        const tracks = await api.searchTracks(q);
+        ui.renderSearchResults(tracks, seed, addToSeed);
+    } catch {
+        ui.setEmpty(list, "Search failed. Try again.");
+    }
 }
 
-async function getRecommendations() {
-  if (!seed.length) return;
+async function doLoadPopular() {
+    const list = document.querySelector("#search-results");
+    ui.setLoading(list, "Loading popular tracks...");
+    try {
+        const tracks = await api.loadPopular();
+        ui.renderSearchResults(tracks, seed, addToSeed);
+    } catch {
+        ui.setEmpty(list, "Failed to load popular tracks.");
+    }
+}
 
-  const k = parseInt($("#k-select").value);
-  const panel = $("#rec-results");
-  panel.innerHTML = '<div class="loading"><span class="spinner"></span>Generating recommendations...</div>';
+async function doGetRecommendations() {
+    if (!seed.length) return;
+    const k = parseInt(document.querySelector("#k-select").value);
+    const panel = document.querySelector("#rec-results");
+    ui.setLoading(panel, "Generating recommendations...");
+    try {
+        const recs = await api.getRecommendations(seed.map((t) => t.corpus_idx), k);
+        recommendations = recs;
+        ui.renderRecommendations(recs, addToSeed);
+    } catch {
+        ui.setEmpty(panel, "Recommendation failed. Try again.");
+    }
+}
 
-  try {
-    const res = await fetch("/api/recommend", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ seed_idxs: seed.map((t) => t.corpus_idx), k }),
+async function doSavePlaylist() {
+    if (!seed.length) return;
+    const nameInput = document.querySelector("#playlist-name");
+    const saveBtn = document.querySelector("#btn-save");
+    const statusEl = document.querySelector("#save-status");
+
+    const name = nameInput.value.trim() || "My Playlist";
+    const tracks = [
+        ...seed.map((t) => ({ track_uri: t.track_uri, track_name: t.track_name, artist_name: t.artist_name, is_seed: true })),
+        ...recommendations.map((r) => ({ track_uri: r.track_uri, track_name: r.track_name, artist_name: r.artist_name, is_seed: false })),
+    ];
+
+    saveBtn.textContent = "Saving...";
+    saveBtn.disabled = true;
+    statusEl.textContent = "";
+    try {
+        const result = await api.savePlaylist(name, tracks);
+        statusEl.textContent = `Saved! Playlist #${result.id}`;
+        statusEl.className = "save-status save-status-ok";
+        nameInput.value = "";
+        updateSaveBtn("saved");
+        setTimeout(() => { statusEl.textContent = ""; statusEl.className = "save-status"; }, 4000);
+    } catch {
+        statusEl.textContent = "Save failed. Try again.";
+        statusEl.className = "save-status save-status-err";
+        updateSaveBtn("unsaved");
+    }
+}
+
+function init() {
+    let debounceTimer = null;
+    const searchInput = document.querySelector("#search-input");
+
+    updateSaveBtn("empty");
+
+    searchInput.addEventListener("input", (e) => {
+        clearTimeout(debounceTimer);
+        const q = e.target.value.trim();
+        if (q.length < 2) { ui.renderSearchResults([], seed, addToSeed); return; }
+        debounceTimer = setTimeout(() => doSearch(q), 300);
     });
-    const recs = await res.json();
-    renderRecommendations(recs);
-  } catch {
-    panel.innerHTML = '<div class="empty-state">Recommendation failed. Try again.</div>';
-  }
-}
 
-function renderRecommendations(recs) {
-  const panel = $("#rec-results");
-  if (!recs.length) {
-    panel.innerHTML = '<div class="empty-state">No recommendations generated.</div>';
-    return;
-  }
-  panel.innerHTML = recs.map((r) => `
-    <div class="rec-item">
-      <span class="rank">#${r.rank}</span>
-      <div class="info">
-        <div class="name">${trackLink(r.track_name, r.track_uri)}</div>
-        <div class="artist">${artistLink(r.artist_name, r.artist_uri)}</div>
-      </div>
-      <button class="add-btn" data-corpus-idx="${r.corpus_idx}" onclick="addToSeed(${r.corpus_idx}, '${escAttr(r.track_name)}', '${escAttr(r.artist_name)}', '${escAttr(r.track_uri || "")}', '${escAttr(r.artist_uri || "")}')">+ Add</button>
-    </div>
-  `).join("");
-}
+    searchInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            clearTimeout(debounceTimer);
+            const q = e.target.value.trim();
+            if (q) doSearch(q);
+        }
+    });
 
-function spotifyUrl(uri) {
-  if (!uri) return "";
-  const parts = uri.split(":");
-  if (parts.length === 3) return `https://open.spotify.com/${parts[1]}/${parts[2]}`;
-  return "";
-}
+    document.querySelector("#btn-popular").addEventListener("click", doLoadPopular);
+    document.querySelector("#btn-recommend").addEventListener("click", doGetRecommendations);
+    document.querySelector("#btn-clear").addEventListener("click", clearSeed);
+    document.querySelector("#btn-save").addEventListener("click", doSavePlaylist);
 
-function trackLink(name, trackUri) {
-  const url = spotifyUrl(trackUri);
-  if (url) return `<a href="${esc(url)}" target="_blank" rel="noopener" class="spotify-link">${esc(name)}</a>`;
-  return esc(name);
-}
-
-function artistLink(name, artistUri) {
-  const url = spotifyUrl(artistUri);
-  if (url) return `<a href="${esc(url)}" target="_blank" rel="noopener" class="spotify-link artist-link">${esc(name)}</a>`;
-  return esc(name);
-}
-
-function esc(s) {
-  const d = document.createElement("div");
-  d.textContent = s;
-  return d.innerHTML;
-}
-
-function escAttr(s) {
-  return s.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+    doLoadPopular();
 }
 
 document.addEventListener("DOMContentLoaded", init);
