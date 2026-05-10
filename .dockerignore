@@ -13,3 +13,4 @@ bash.exe.stackdump
 src/__pycache__/
 demo/__pycache__/
 testings/
+scripts/build_release_zip.py

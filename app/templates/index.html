@@ -9,13 +9,31 @@
 <body>
 
 <header>
-  <h1>GRU Music Recommender</h1>
-  <p>Sequential next-track prediction trained on 1M Spotify playlists</p>
+  <div class="header-left">
+    <h1>GRU Music Recommender</h1>
+  </div>
+  <nav class="header-nav">
+    <span class="nav-item active">Home</span>
+  </nav>
+  <div class="header-right">
+    <span class="header-subtitle">Trained on 1M Spotify playlists</span>
+  </div>
 </header>
 
 <div class="container">
 
-  <!-- Left column: Search & Browse -->
+  <!-- Left column: Saved Playlists -->
+  <div class="playlist-sidebar">
+    <div class="panel sidebar-panel">
+      <h2>Playlists</h2>
+      <ul class="playlist-list" id="playlist-list">
+        <div class="empty-state">Loading playlists...</div>
+      </ul>
+      <div class="pagination" id="playlist-pagination"></div>
+    </div>
+  </div>
+
+  <!-- Middle column: Search & Browse -->
   <div>
     <div class="panel">
       <h2>Search Tracks</h2>
@@ -45,6 +63,7 @@
         </div>
       </div>
       <span class="save-status" id="save-status"></span>
+      <span class="edit-indicator" id="edit-indicator" style="display:none"></span>
       <ul class="track-list" id="seed-list">
         <div class="empty-state">Your seed playlist is empty. Search and add tracks above.</div>
       </ul>

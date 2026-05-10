@@ -22,9 +22,15 @@ services:
       - "8000:8000"
     environment:
       DATABASE_URL: postgresql://musicrec:musicrec@db:5432/musicrec
+      MIN_NEW_PLAYLISTS: 10
+      FINETUNE_LR: 1e-4
+    volumes:
+      - model_data:/app/models
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
 
 volumes:
   postgres_data:
+  model_data:

@@ -30,4 +30,51 @@ const api = {
         if (!res.ok) throw new Error("Failed to save playlist");
         return res.json();
     },
+
+    async listPlaylists(page = 1, perPage = 20) {
+        const res = await fetch(`/api/playlists?page=${page}&per_page=${perPage}`);
+        if (!res.ok) throw new Error("Failed to load playlists");
+        return res.json();
+    },
+
+    async getPlaylist(id) {
+        const res = await fetch(`/api/playlists/${id}`);
+        if (!res.ok) throw new Error("Failed to load playlist");
+        return res.json();
+    },
+
+    async renamePlaylist(id, name) {
+        const res = await fetch(`/api/playlists/${id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name }),
+        });
+        if (!res.ok) throw new Error("Failed to rename playlist");
+        return res.json();
+    },
+
+    async updatePlaylistTracks(id, tracks) {
+        const res = await fetch(`/api/playlists/${id}/tracks`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tracks }),
+        });
+        if (!res.ok) throw new Error("Failed to update tracks");
+        return res.json();
+    },
+
+    async deletePlaylist(id) {
+        const res = await fetch(`/api/playlists/${id}`, { method: "DELETE" });
+        if (!res.ok) throw new Error("Failed to delete playlist");
+    },
+
+    async resolveUris(uris) {
+        const res = await fetch("/api/resolve-uris", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ uris }),
+        });
+        if (!res.ok) throw new Error("Failed to resolve URIs");
+        return res.json();
+    },
 };
