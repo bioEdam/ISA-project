@@ -93,7 +93,7 @@ The first request after startup may take 30-60 seconds as the model and vocabula
 
 **Download fails during build:**
 If the build fails during the data download step, check your internet connection and retry. The files are hosted on GitHub Releases at:
-https://github.com/bioEdam/ISA-project/releases/tag/v1.0-data
+https://github.com/bioEdam/ISA-project/releases/tag/v1.0
 
 **Database connection error (Docker Compose):**
 If the app starts before the database is ready, Docker Compose will retry automatically (the `db` service has a health check, and `app` depends on `service_healthy`). If issues persist, try `docker compose down -v && docker compose up --build`.

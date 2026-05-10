@@ -5,3 +5,4 @@ fastapi
 uvicorn[standard]
 jinja2
 asyncpg
+psycopg2-binary

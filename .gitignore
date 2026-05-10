@@ -7,3 +7,5 @@ processed/
 src/outputs/
 notebooks/outputs
 __pycache__/
+model-deployment-code.zip
+bash.exe.stackdump
