@@ -31,14 +31,9 @@ import argparse
 import os
 import sys
 from pathlib import Path
-
-try:
-    import pandas as pd
-    import psycopg2
-    import psycopg2.extras
-except ImportError:
-    sys.exit("Missing dependencies — run:  pip install pandas pyarrow psycopg2-binary")
-
+import pandas as pd
+import psycopg2
+import psycopg2.extras
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Seed DB with training playlists")
@@ -56,7 +51,7 @@ def main() -> None:
     args = parser.parse_args()
 
     database_url = os.environ.get(
-        "DATABASE_URL", "postgresql://musicrec:musicrec@localhost:5432/musicrec"
+        "DATABASE_URL", "postgresql://musicrec:musicrec@localhost:12345/musicrec"
     )
 
     processed = Path(args.processed)
