@@ -2,26 +2,32 @@
 
 ## Prerequisites
 
-- [Docker](https://docs.docker.com/get-docker/) installed and running
+- [Docker](https://docs.docker.com/get-docker/) installed and running (Docker Compose included with Docker Desktop)
 - Internet connection (the Docker build downloads ~430 MB of model and data files)
 - At least 4 GB of free disk space (for the Docker image)
 - At least 2 GB of free RAM (for model inference)
 
-## Quick Start
+## Quick Start with Docker Compose (Recommended)
 
-The GitHub release includes a **`model-deployment-code.zip`** archive containing only the files needed to build and run the application — no notebooks or training scripts. Download it from:
-https://github.com/bioEdam/ISA-project/releases/tag/v1.0
-
-1. Extract the zip archive
-2. Open a terminal in the extracted directory
-3. Build and run:
+Docker Compose runs the application with a PostgreSQL database, enabling the save-playlist feature.
 
 ```bash
-docker build -t gru-recommender .
-docker run -p 8000:8000 gru-recommender
+docker compose up --build
 ```
 
-4. Open **http://localhost:8000** in your browser
+This starts two services:
+- **app** — the FastAPI web application on **http://localhost:8000**
+- **db** — PostgreSQL 16 on port 12345 (schema auto-initialized from `db/schema.sql`)
+
+Open **http://localhost:8000** in your browser.
+
+### Seeding the Database (Optional)
+
+To populate the database with popular playlists from the training data (requires `processed/` directory):
+
+```bash
+python db/seed.py --n 20
+```
 
 ## Build Details
 
@@ -35,17 +41,15 @@ The Docker build automatically downloads the trained model and data files (~430 
 
 Build time is approximately 5-10 minutes depending on network speed.
 
-## Run
-
-```bash
-docker run -p 8000:8000 gru-recommender
-```
-
-The application will start loading the model and vocabulary. This takes approximately 30-60 seconds. Once ready, open your browser and navigate to:
-
-**http://localhost:8000**
-
 ## Stop
+
+**Docker Compose:**
+```bash
+docker compose down
+```
+Add `-v` to also remove the database volume: `docker compose down -v`
+
+**Standalone Docker:**
 
 Press `Ctrl+C` in the terminal where the container is running, or:
 
@@ -55,7 +59,7 @@ docker stop $(docker ps -q --filter ancestor=gru-recommender)
 
 ## Configuration
 
-To use a different port:
+**Using a different port (standalone Docker):**
 
 ```bash
 docker run -p 9000:8000 gru-recommender
@@ -63,13 +67,23 @@ docker run -p 9000:8000 gru-recommender
 
 Then access at `http://localhost:9000`.
 
+**Database URL (Docker Compose):**
+
+The `DATABASE_URL` is configured automatically in `docker-compose.yml`. For local development without Docker Compose, set it in `.env`:
+
+```
+DATABASE_URL=postgresql://musicrec:musicrec@localhost:5432/musicrec
+```
+
+If `DATABASE_URL` is not set, the app runs without database support (save-playlist feature is disabled).
+
 ## Troubleshooting
 
 **Port already in use:**
 ```
 Error: Bind for 0.0.0.0:8000 failed: port is already allocated
 ```
-Solution: Use a different host port (e.g., `-p 9000:8000`).
+Solution: Use a different host port (e.g., `-p 9000:8000`) or change the port mapping in `docker-compose.yml`.
 
 **Out of memory:**
 The application requires approximately 2 GB of RAM. If the container crashes on startup, ensure your Docker environment has sufficient memory allocated (Docker Desktop > Settings > Resources).
@@ -80,3 +94,6 @@ The first request after startup may take 30-60 seconds as the model and vocabula
 **Download fails during build:**
 If the build fails during the data download step, check your internet connection and retry. The files are hosted on GitHub Releases at:
 https://github.com/bioEdam/ISA-project/releases/tag/v1.0-data
+
+**Database connection error (Docker Compose):**
+If the app starts before the database is ready, Docker Compose will retry automatically (the `db` service has a health check, and `app` depends on `service_healthy`). If issues persist, try `docker compose down -v && docker compose up --build`.

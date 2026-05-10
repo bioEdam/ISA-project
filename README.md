@@ -163,22 +163,44 @@ The application is built with **FastAPI** (backend) and a vanilla **HTML/CSS/JS*
 **Features:**
 - Search tracks by name or artist
 - Browse the most popular tracks in the vocabulary
-- Build a seed playlist interactively (with drag-to-reorder and duplicate detection)
+- Build a seed playlist interactively (with duplicate detection)
 - Get top-K next-track recommendations (K = 5, 10, or 20)
 - Add recommended tracks back to the seed for iterative exploration
+- Full playlist management: browse, load, edit (rename + add/remove tracks), and delete saved playlists via a paginated side panel
+- Save playlists (seed + recommendations) to a PostgreSQL database
 - Context quality indicator (weak / good / excellent based on seed size)
 
+**No user accounts:** The application does not implement any user management. All saved playlists are stored in a shared pool. The original Spotify MPD dataset contains no user identifiers so the model was trained without any notion of per-user preferences. We keep the same approach in the deployed application: playlists are treated as sequences, and all saved playlists feed directly into the retraining pipeline as collective training signal.
+
 **Architecture:**
-- `app/main.py` - FastAPI application with REST API endpoints (`/api/search`, `/api/top`, `/api/recommend`, `/api/health`)
+- `app/main.py` - FastAPI application, lifespan (model + DB pool init), middleware, router registration
+- `app/dependencies.py` - Dependency injection helpers (`get_pool`, `get_demo`)
+- `app/models.py` - Pydantic request/response models
+- `app/routers/recommender.py` - Recommender API endpoints (`/api/search`, `/api/top`, `/api/recommend`, `/api/health`)
+- `app/routers/playlists.py` - Playlist CRUD endpoints (`/api/playlists`)
 - `app/templates/index.html` - Jinja2 HTML template
 - `app/static/style.css` - Dark-themed responsive UI
-- `app/static/app.js` - Client-side logic (search, seed management, recommendation display)
+- `app/static/api.js` - API client functions
+- `app/static/ui.js` - UI rendering module
+- `app/static/app.js` - Application state and event handlers
 - `demo/recommender.py` - `GRUDemo` class: loads model checkpoint + track catalog, exposes search/recommend/top_popular methods
 - `demo/cli.py` - Interactive CLI demo (alternative to the web interface)
 
 ### Docker
 
 The application is containerized with a `Dockerfile` based on `python:3.11-slim`. The build installs CPU-only PyTorch and downloads the required model and data files (~430 MB) from the GitHub release.
+
+**Option A: Docker Compose (recommended)** - runs the app with a PostgreSQL database for playlist persistence:
+
+```bash
+docker compose up --build
+```
+
+This starts two services:
+- `app` - the FastAPI web application on port 8000, with a cron daemon for scheduled retraining
+- `db` - PostgreSQL 16 on port 12345 (auto-initializes schema from `db/schema.sql`)
+
+**Option B: Standalone Docker** - runs the app without a database (save-playlist feature disabled, no retraining):
 
 ```bash
 docker build -t gru-recommender .
@@ -189,6 +211,30 @@ Then open **http://localhost:8000** in your browser.
 
 Startup takes approximately 30-60 seconds as the model and vocabulary are loaded into memory; subsequent requests complete in under 500ms.
 
+### Daily Model Fine-Tuning
+
+The application includes a scheduled retraining pipeline that fine-tunes the GRU model on created playlists stored in the database. A cron job runs daily at 3:00 AM UTC (`scripts/retrain.py`):
+
+1. Checks if at least 10 new playlists have been saved since the last retraining run
+2. Fetches all playlists from PostgreSQL and encodes them as training sequences
+3. Fine-tunes the model from the **base checkpoint** using a low learning rate (1e-4) for 1 epoch - preventing forgetting of the patterns learned from the 1M MPD playlists
+4. Saves the updated checkpoint and restarts the application
+
+Retraining state is logged to the `retrain_log` database table and `models/retrain_state.json`. Fine-tuned checkpoints persist across container rebuilds via a Docker volume.
+
+**Configuration** (environment variables in `docker-compose.yml`):
+
+| Variable             | Default | Description                                  |
+|----------------------|---------|----------------------------------------------|
+| `MIN_NEW_PLAYLISTS`  | `10`    | Minimum new playlists to trigger retraining  |
+| `FINETUNE_LR`        | `1e-4`  | Fine-tuning learning rate                    |
+| `FINETUNE_EPOCHS`    | `1`     | Number of fine-tuning epochs                 |
+
+**Manual trigger** (for testing):
+```bash
+docker exec -it <container> python scripts/retrain.py
+```
+
 ### GitHub Release
 
 The trained model checkpoint and required data files are hosted on [GitHub Releases (v1.0)](https://github.com/bioEdam/ISA-project/releases/tag/v1.0) so the Docker build can fetch them without bundling large files in the repository:
@@ -198,9 +244,9 @@ The trained model checkpoint and required data files are hosted on [GitHub Relea
 | `track_vocab.parquet`       | ~64 MB  | Track vocabulary (URI to index mapping) |
 | `track_meta.parquet`        | ~216 MB | Track metadata (names, artists)         |
 | `gru_best.pt`               | ~150 MB | Trained GRU model checkpoint            |
-| `model-deployment-code.zip` | —       | Minimal deployment package (see below)  |
+| `model-deployment-code.zip` | -       | Minimal deployment package (see below)  |
 
-The release also includes a **`model-deployment-code.zip`** archive containing only the files needed to build and run the Docker image — no notebooks, no training scripts, no data pipeline code. It includes the Dockerfile, the FastAPI app, the inference layer (`demo/recommender.py`, `src/models.py`), runtime dependencies (`requirements-app.txt`), and documentation. This is the self-contained package intended for deployment.
+The release also includes a **`model-deployment-code.zip`** archive containing only the files needed to build and run the Docker image - no notebooks, no training scripts, no data pipeline code. It includes the Dockerfile, the FastAPI app, the inference layer (`demo/recommender.py`, `src/models.py`), runtime dependencies (`requirements-app.txt`), and documentation. This is the self-contained package intended for deployment.
 
 Alternatively, the Dockerfile can copy the model/data files from a local `processed/` and `models/` directory instead of downloading them (see comments in the Dockerfile).
 
@@ -246,15 +292,28 @@ Alternatively, the Dockerfile can copy the model/data files from a local `proces
 │   └── validate_ingest.py            # Verify parquet outputs match JSON input
 │
 ├── app/                              # [MP3] Web application
-│   ├── main.py                       # FastAPI application
+│   ├── main.py                       # FastAPI application, lifespan, middleware
+│   ├── dependencies.py               # Dependency injection (get_pool, get_demo)
+│   ├── models.py                     # Pydantic request/response models
+│   ├── routers/
+│   │   ├── recommender.py            # Recommender API endpoints
+│   │   └── playlists.py              # Playlist CRUD endpoints
 │   ├── templates/index.html          # HTML template
 │   └── static/
 │       ├── style.css                 # Dark-themed responsive CSS
-│       └── app.js                    # Client-side JavaScript
+│       ├── api.js                    # API client functions
+│       ├── ui.js                     # UI rendering module
+│       └── app.js                    # Application state and event handlers
 │
 ├── demo/                             # [MP3] Inference layer
 │   ├── recommender.py                # GRUDemo class (model loading + inference)
 │   └── cli.py                        # Interactive CLI demo
+│
+├── db/                               # [MP3] Database
+│   ├── schema.sql                    # PostgreSQL schema (playlists, playlist_tracks, retrain_log)
+│   └── seed.py                       # Seed DB with popular training playlists
+│
+├── docker-compose.yml                # Multi-service deployment (app + PostgreSQL)
 │
 ├── docs/
 │   ├── installation.md               # Docker build & run instructions
@@ -266,7 +325,10 @@ Alternatively, the Dockerfile can copy the model/data files from a local `proces
 │
 ├── processed/                        # Generated parquet artifacts (gitignored)
 └── scripts/
-    └── build_release_zip.py          # Package files for GitHub release
+    ├── build_release_zip.py          # Package files for GitHub release
+    ├── retrain.py                    # [MP3] Daily fine-tuning on user playlists
+    ├── entrypoint.sh                 # [MP3] Docker entrypoint (cron + uvicorn restart loop)
+    └── crontab                       # [MP3] Cron schedule for daily retraining
 ```
 
 ---
@@ -322,10 +384,14 @@ jupyter notebook notebooks/Modeling_ItemCF.ipynb
 ### Mini-project 3
 
 ```bash
-# Option A: Docker (recommended)
+# Option A: Docker Compose with database (recommended)
+docker compose up --build
+
+# Option B: Standalone Docker (no database, save-playlist disabled)
 docker build -t gru-recommender .
 docker run -p 8000:8000 gru-recommender
 
-# Option B: Run locally (requires processed/ and models/ directories)
+# Option C: Run locally (requires processed/ and models/ directories)
+# Optionally set DATABASE_URL in .env for playlist persistence
 uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
