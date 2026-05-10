@@ -6,3 +6,4 @@ data
 processed/
 src/outputs/
 notebooks/outputs
+__pycache__/
