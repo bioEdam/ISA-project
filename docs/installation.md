@@ -23,11 +23,14 @@ Open **http://localhost:8000** in your browser.
 
 ### Seeding the Database (Optional)
 
-To populate the database with popular playlists from the training data (requires `processed/` directory):
+To populate the database with the 50 most popular playlists from the training data, run the seed script locally (requires Python + pandas + psycopg2):
 
 ```bash
-python db/seed.py --n 20
+pip install pandas pyarrow psycopg2-binary
+python db/seed.py
 ```
+
+The seed data file (`db/seed_data.parquet`) is included in the zip. The script connects to the database exposed on port 12345 by Docker Compose.
 
 ## Build Details
 
@@ -93,7 +96,7 @@ The first request after startup may take 30-60 seconds as the model and vocabula
 
 **Download fails during build:**
 If the build fails during the data download step, check your internet connection and retry. The files are hosted on GitHub Releases at:
-https://github.com/bioEdam/ISA-project/releases/tag/v1.0
+https://github.com/bioEdam/ISA-project/releases/tag/v2.0
 
 **Database connection error (Docker Compose):**
 If the app starts before the database is ready, Docker Compose will retry automatically (the `db` service has a health check, and `app` depends on `service_healthy`). If issues persist, try `docker compose down -v && docker compose up --build`.

@@ -163,7 +163,7 @@ The application is built with **FastAPI** (backend) and a vanilla **HTML/CSS/JS*
 **Features:**
 - Search tracks by name or artist
 - Browse the most popular tracks in the vocabulary
-- Build a seed playlist interactively (with duplicate detection)
+- Build a seed playlist interactively
 - Get top-K next-track recommendations (K = 5, 10, or 20)
 - Add recommended tracks back to the seed for iterative exploration
 - Full playlist management: browse, load, edit (rename + add/remove tracks), and delete saved playlists via a paginated side panel
@@ -237,14 +237,14 @@ docker exec -it <container> python scripts/retrain.py
 
 ### GitHub Release
 
-The trained model checkpoint and required data files are hosted on [GitHub Releases (v1.0)](https://github.com/bioEdam/ISA-project/releases/tag/v1.0) so the Docker build can fetch them without bundling large files in the repository:
+The trained model checkpoint and required data files are hosted on [GitHub Releases (v2.0)](https://github.com/bioEdam/ISA-project/releases/tag/v2.0) so the Docker build can fetch them without bundling large files in the repository:
 
 | File                        | Size    | Purpose                                 |
 |-----------------------------|---------|-----------------------------------------|
 | `track_vocab.parquet`       | ~64 MB  | Track vocabulary (URI to index mapping) |
 | `track_meta.parquet`        | ~216 MB | Track metadata (names, artists)         |
 | `gru_best.pt`               | ~150 MB | Trained GRU model checkpoint            |
-| `model-deployment-code.zip` | -       | Minimal deployment package (see below)  |
+| `model-deployment-code.zip` | ~35 KB  | Minimal deployment package (see below)  |
 
 The release also includes a **`model-deployment-code.zip`** archive containing only the files needed to build and run the Docker image - no notebooks, no training scripts, no data pipeline code. It includes the Dockerfile, the FastAPI app, the inference layer (`demo/recommender.py`, `src/models.py`), runtime dependencies (`requirements-app.txt`), and documentation. This is the self-contained package intended for deployment.
 

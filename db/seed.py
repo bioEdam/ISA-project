@@ -1,28 +1,29 @@
 #!/usr/bin/env python3
 """
-Seed the database with playlists from the processed Parquet files.
+Seed the database with playlists from a pre-built seed data file.
 
-The script picks the top-N playlists by follower count from the training
-corpus and inserts them (with all their tracks) into the playlists /
-playlist_tracks tables.  It skips playlists whose name already exists so
-it is safe to run more than once.
+The seed data file (db/seed_data.parquet) contains the top-N playlists
+by follower count from the training corpus.  It is small enough to ship
+in a GitHub release (~300 KB for 50 playlists).
+
+Generate it with:  python scripts/build_seed_data.py
 
 Usage
 -----
-    python db/seed.py [--n N] [--processed PATH]
+    python db/seed.py [--data PATH]
 
 Environment
 -----------
     DATABASE_URL  PostgreSQL DSN
-                  (default: postgresql://musicrec:musicrec@localhost:5432/musicrec)
+                  (default: postgresql://musicrec:musicrec@localhost:12345/musicrec)
 
 Examples
 --------
-    # seed top 20 training playlists (default)
+    # seed from the default file (db/seed_data.parquet)
     python db/seed.py
 
-    # seed top 50 using a custom processed dir
-    python db/seed.py --n 50 --processed /data/processed
+    # seed from a custom path
+    python db/seed.py --data /app/db/seed_data.parquet
 
     # point at a remote DB
     DATABASE_URL=postgresql://user:pass@host/db python db/seed.py
@@ -31,22 +32,18 @@ import argparse
 import os
 import sys
 from pathlib import Path
+
 import pandas as pd
 import psycopg2
 import psycopg2.extras
 
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Seed DB with training playlists")
     parser.add_argument(
-        "--n",
-        type=int,
-        default=20,
-        help="Number of playlists to seed, ranked by follower count (default: 20)",
-    )
-    parser.add_argument(
-        "--processed",
-        default=str(Path(__file__).resolve().parent.parent / "processed"),
-        help="Path to the processed/ directory (default: <repo-root>/processed)",
+        "--data",
+        default=str(Path(__file__).resolve().parent / "seed_data.parquet"),
+        help="Path to the seed data parquet (default: db/seed_data.parquet)",
     )
     args = parser.parse_args()
 
@@ -54,38 +51,29 @@ def main() -> None:
         "DATABASE_URL", "postgresql://musicrec:musicrec@localhost:12345/musicrec"
     )
 
-    processed = Path(args.processed)
-    playlists_path = processed / "playlists.parquet"
-    tracks_path = processed / "tracks.parquet"
+    data_path = Path(args.data)
+    if not data_path.exists():
+        sys.exit(
+            f"File not found: {data_path}\n"
+            "Generate it with:  python scripts/build_seed_data.py\n"
+            "Or download seed_data.parquet from the GitHub release."
+        )
 
-    for p in (playlists_path, tracks_path):
-        if not p.exists():
-            sys.exit(
-                f"File not found: {p}\n"
-                "Run  python src/ingest.py  first to generate the processed parquets."
-            )
+    print(f"Loading seed data from {data_path} …")
+    df = pd.read_parquet(data_path)
 
-    print(f"Loading parquets from {processed} …")
-    playlists_df = pd.read_parquet(playlists_path, columns=["pid", "name", "num_followers"])
-    tracks_df = pd.read_parquet(
-        tracks_path,
-        columns=["pid", "pos", "track_uri", "track_name", "artist_name", "album_name", "track_dur_ms"],
-    )
-
-    top = playlists_df.nlargest(args.n, "num_followers")[["pid", "name"]]
-    pids = set(top["pid"])
-    playlist_tracks = tracks_df[tracks_df["pid"].isin(pids)]
+    playlists = df.groupby("pid").first()[["playlist_name"]].reset_index()
+    playlists = playlists.rename(columns={"playlist_name": "name"})
 
     print(f"Connecting to {database_url} …")
     conn = psycopg2.connect(database_url)
     cur = conn.cursor()
 
-    # Fetch names that are already in the DB so we can skip duplicates
     cur.execute("SELECT name FROM playlists")
     existing_names = {row[0] for row in cur.fetchall()}
 
     inserted = skipped = 0
-    for _, pl in top.iterrows():
+    for _, pl in playlists.iterrows():
         if pl["name"] in existing_names:
             skipped += 1
             continue
@@ -96,10 +84,7 @@ def main() -> None:
         )
         pl_id = cur.fetchone()[0]
 
-        pl_tracks = (
-            playlist_tracks[playlist_tracks["pid"] == pl["pid"]]
-            .sort_values("pos")
-        )
+        pl_tracks = df[df["pid"] == pl["pid"]].sort_values("pos")
         rows = [
             (
                 pl_id,

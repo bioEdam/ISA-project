@@ -23,6 +23,7 @@ FILES = [
     # Database
     "db/schema.sql",
     "db/seed.py",
+    "db/seed_data.parquet",
     # Scripts
     "scripts/entrypoint.sh",
     "scripts/retrain.py",

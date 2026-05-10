@@ -16,7 +16,7 @@ RUN pip install --no-cache-dir -r requirements-app.txt
 #COPY models/gru_best.pt models_seed/gru_best.pt
 
 # Comment out if you have already copied the files from local
-ARG RELEASE_URL=https://github.com/bioEdam/ISA-project/releases/download/v1.0
+ARG RELEASE_URL=https://github.com/bioEdam/ISA-project/releases/download/v2.0
 RUN mkdir -p processed models models_seed && \
     curl -L -o processed/track_vocab.parquet ${RELEASE_URL}/track_vocab.parquet && \
     curl -L -o processed/track_meta.parquet  ${RELEASE_URL}/track_meta.parquet && \
@@ -25,6 +25,8 @@ RUN mkdir -p processed models models_seed && \
 COPY src/models.py src/models.py
 COPY demo/recommender.py demo/recommender.py
 COPY app/ app/
+COPY db/schema.sql db/schema.sql
+COPY db/seed.py db/seed.py
 COPY scripts/ scripts/
 
 RUN crontab scripts/crontab && chmod +x scripts/entrypoint.sh

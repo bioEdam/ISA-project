@@ -9,3 +9,4 @@ notebooks/outputs
 __pycache__/
 model-deployment-code.zip
 bash.exe.stackdump
+db/seed_data.parquet
