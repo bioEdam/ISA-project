@@ -22,3 +22,11 @@ class PlaylistIn(BaseModel):
 
 class PlaylistRename(BaseModel):
     name: str
+
+
+class PlaylistTracksUpdate(BaseModel):
+    tracks: list[TrackIn]
+
+
+class ResolveRequest(BaseModel):
+    uris: list[str]

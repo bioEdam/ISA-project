@@ -132,5 +132,53 @@ const ui = (() => {
         });
     }
 
-    return { setLoading, setEmpty, renderSearchResults, renderSeed, renderRecommendations, updateAddButtons };
+    function renderPlaylistList(playlists, activeId, { onLoad, onEdit, onDelete }) {
+        const list = document.querySelector("#playlist-list");
+        if (!playlists.length) {
+            setEmpty(list, "No playlists saved yet.");
+            return;
+        }
+        list.innerHTML = playlists.map(pl => `
+            <li class="playlist-item${pl.id === activeId ? ' active' : ''}" data-id="${pl.id}">
+              <span class="pl-name" title="${esc(pl.name)}">${esc(pl.name)}</span>
+              <span class="pl-actions">
+                <button class="btn-icon pl-edit" data-id="${pl.id}" title="Edit">&#9998;</button>
+                <button class="btn-icon pl-delete" data-id="${pl.id}" title="Delete">&#128465;</button>
+              </span>
+            </li>
+        `).join("");
+
+        list.querySelectorAll(".playlist-item").forEach(el => {
+            el.addEventListener("click", (e) => {
+                if (e.target.closest(".pl-actions")) return;
+                onLoad(+el.dataset.id);
+            });
+        });
+        list.querySelectorAll(".pl-edit").forEach(btn => {
+            btn.addEventListener("click", () => onEdit(+btn.dataset.id));
+        });
+        list.querySelectorAll(".pl-delete").forEach(btn => {
+            btn.addEventListener("click", () => onDelete(+btn.dataset.id));
+        });
+    }
+
+    function renderPagination(page, pages, onPageChange) {
+        const container = document.querySelector("#playlist-pagination");
+        if (pages <= 1) { container.innerHTML = ""; return; }
+        container.innerHTML = `
+            <button class="btn-secondary btn-small" id="pg-prev" ${page <= 1 ? 'disabled' : ''}>Prev</button>
+            <span class="page-info">${page} / ${pages}</span>
+            <button class="btn-secondary btn-small" id="pg-next" ${page >= pages ? 'disabled' : ''}>Next</button>
+        `;
+        const prev = container.querySelector("#pg-prev");
+        const next = container.querySelector("#pg-next");
+        if (prev) prev.addEventListener("click", () => onPageChange(page - 1));
+        if (next) next.addEventListener("click", () => onPageChange(page + 1));
+    }
+
+    return {
+        setLoading, setEmpty, renderSearchResults, renderSeed,
+        renderRecommendations, updateAddButtons,
+        renderPlaylistList, renderPagination,
+    };
 })();

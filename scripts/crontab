@@ -1,0 +1,3 @@
+# Daily fine-tuning at 3:00 AM UTC
+# env vars are dumped to /etc/retrain.env by entrypoint.sh since cron has no access to container env
+0 3 * * * . /etc/retrain.env && cd /app && python scripts/retrain.py >> /var/log/retrain.log 2>&1

@@ -8,30 +8,64 @@ body {
 }
 
 header {
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  padding: 1.5rem 2rem;
-  text-align: center;
-  border-bottom: 2px solid #1db954;
+  background: #000;
+  padding: 0.75rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
-header h1 {
-  font-size: 1.6rem;
+.header-left h1 {
+  font-size: 1.1rem;
   color: #fff;
-  letter-spacing: 0.02em;
+  letter-spacing: -0.01em;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
-header p {
-  color: #999;
+.header-nav {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.nav-item {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
   font-size: 0.85rem;
-  margin-top: 0.3rem;
+  font-weight: 600;
+  color: #b3b3b3;
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+}
+
+.nav-item:hover {
+  color: #fff;
+}
+
+.nav-item.active {
+  background: #282828;
+  color: #fff;
+}
+
+.header-right {
+  margin-left: auto;
+}
+
+.header-subtitle {
+  color: #6a6a6a;
+  font-size: 0.78rem;
+  font-weight: 400;
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 1500px;
   margin: 0 auto;
   padding: 1.5rem;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 280px 1fr 1fr;
   gap: 1.5rem;
 }
 
@@ -123,9 +157,9 @@ button:active { transform: scale(0.97); }
   overflow-y: auto;
 }
 
-.track-list::-webkit-scrollbar { width: 6px; }
-.track-list::-webkit-scrollbar-track { background: transparent; }
-.track-list::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+.track-list::-webkit-scrollbar, .playlist-list::-webkit-scrollbar { width: 6px; }
+.track-list::-webkit-scrollbar-track, .playlist-list::-webkit-scrollbar-track { background: transparent; }
+.track-list::-webkit-scrollbar-thumb, .playlist-list::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
 
 .track-item {
   display: flex;
@@ -248,14 +282,25 @@ button:active { transform: scale(0.97); }
   text-align: center;
 }
 
+.rec-item .info {
+  flex: 1;
+  min-width: 0;
+}
+
 .rec-item .info .name {
   font-size: 0.9rem;
   color: #e0e0e0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .rec-item .info .artist {
   font-size: 0.78rem;
   color: #888;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .rec-item .add-btn {
@@ -367,8 +412,93 @@ button:active { transform: scale(0.97); }
 .save-status-ok  { color: #1db954; }
 .save-status-err { color: #e74c3c; }
 
+@media (max-width: 1024px) {
+  .container { grid-template-columns: 1fr 1fr; }
+  .playlist-sidebar { grid-column: 1 / -1; }
+}
+
 @media (max-width: 768px) {
-  .container {
-    grid-template-columns: 1fr;
-  }
+  .container { grid-template-columns: 1fr; }
+}
+
+.sidebar-panel {
+  position: sticky;
+  top: 4.5rem;
+  max-height: calc(100vh - 5.5rem);
+  display: flex;
+  flex-direction: column;
+}
+
+.playlist-list {
+  list-style: none;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.playlist-item {
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: background 0.15s;
+  margin-bottom: 0.2rem;
+}
+
+.playlist-item:hover { background: #252525; }
+.playlist-item.active { background: #1a3a1a; border-left: 3px solid #1db954; }
+
+.playlist-item .pl-name {
+  flex: 1;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.playlist-item .pl-actions {
+  display: flex;
+  gap: 0.2rem;
+  opacity: 0;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+
+.playlist-item:hover .pl-actions { opacity: 1; }
+
+.btn-icon {
+  background: transparent;
+  border: none;
+  color: #888;
+  padding: 0.2rem 0.35rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.btn-icon:hover { color: #e0e0e0; background: #333; }
+.btn-icon.pl-delete:hover { color: #e74c3c; }
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 0 0;
+  border-top: 1px solid #2a2a2a;
+  margin-top: 0.5rem;
+}
+
+.pagination .page-info {
+  font-size: 0.78rem;
+  color: #888;
+}
+
+.edit-indicator {
+  font-size: 0.78rem;
+  color: #ffa500;
+  margin-bottom: 0.4rem;
+  padding-left: 0.25rem;
 }

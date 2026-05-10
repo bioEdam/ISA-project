@@ -19,3 +19,14 @@ CREATE TABLE playlist_tracks (
 );
 
 CREATE INDEX idx_pt_playlist ON playlist_tracks(playlist_id);
+
+CREATE TABLE retrain_log (
+    id              SERIAL       PRIMARY KEY,
+    started_at      TIMESTAMPTZ  NOT NULL,
+    finished_at     TIMESTAMPTZ,
+    num_playlists   INT          NOT NULL,
+    num_sequences   INT,
+    avg_loss        FLOAT,
+    status          VARCHAR(20)  NOT NULL DEFAULT 'running',
+    error_message   TEXT
+);

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 
 from app.dependencies import get_demo
-from app.models import RecommendRequest
+from app.models import RecommendRequest, ResolveRequest
 
 router = APIRouter(prefix="/api", tags=["recommender"])
 
@@ -24,3 +24,15 @@ async def top(n: int = 20, demo=Depends(get_demo)):
 @router.post("/recommend")
 async def recommend(body: RecommendRequest, demo=Depends(get_demo)):
     return demo.recommend(body.seed_idxs, k=body.k)
+
+
+@router.post("/resolve-uris")
+async def resolve_uris(body: ResolveRequest, demo=Depends(get_demo)):
+    results = []
+    for uri in body.uris:
+        idx = demo.uri2idx.get(uri)
+        if idx is not None:
+            results.append(demo.idx2row[idx])
+        else:
+            results.append(None)
+    return results
